@@ -1,5 +1,8 @@
+
 on:
-  workflow_dispatch:
+  pull_request_review:
+    types:
+      - submitted
 
 jobs:
   add_reviewed_label:
@@ -15,17 +18,12 @@ jobs:
           script: |
             const { context, github } = require('@actions/github');
             const { owner, repo } = context.repo;
+            const pull_request_number = context.payload.pull_request.number;
+            const review_state = context.payload.review.state;
+            const changes_requested = context.payload.review.state === 'changes_requested';
             
-            const addLabel = async (pull_request_number) => {
-              const { data: reviews } = await github.pulls.listReviews({
-                owner,
-                repo,
-                pull_number: pull_request_number
-              });
-              
-              const changesRequested = reviews.some(review => review.state === 'CHANGES_REQUESTED');
-              
-              if (changesRequested) {
+            const addLabel = async () => {
+              if (changes_requested) {
                 await github.issues.addLabels({
                   owner,
                   repo,
@@ -35,16 +33,4 @@ jobs:
               }
             };
             
-            const getOpenPullRequests = async () => {
-              const { data: pullRequests } = await github.pulls.list({
-                owner,
-                repo,
-                state: 'open'
-              });
-              
-              for (const pullRequest of pullRequests) {
-                await addLabel(pullRequest.number);
-              }
-            };
-            
-            getOpenPullRequests();
+            addLabel();
