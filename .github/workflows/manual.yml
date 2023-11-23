@@ -15,7 +15,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            npm install @actions/github
             const { github: octokit } = require('@actions/github');
             const { owner, repo } = octokit.context.repo;
             const pull_request_number = octokit.context.payload.pull_request.number;
