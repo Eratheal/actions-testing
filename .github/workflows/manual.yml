@@ -8,20 +8,29 @@ on:
 jobs:
   add_changes_requested_label:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Check if changes were requested by maintainer or collaborator
         id: check_changes_requested
-        uses: actions/github/rest-api-calls@v3
+        uses: actions/github-script@v6
         with:
-          method: GET
-          headers: |
-            Authorization: ${{ secrets.GITHUB_TOKEN }}
-          endpoint: repos/${{ github.repository }}/collaborators/${{ github.event.review.user.login }}
+          script: |
+            github.actions.getOctokit().rest.repos.getCollaborator({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: context.payload.review.user.login
+            }).then(response => {
+              if (response.status === 204) {
+                setContext('isCollaborator', true);
+              }
+            }).catch(error => {
+              setContext('isCollaborator', false);
+            });
 
       - name: Set label based on review
+        id: set_label
         run: |
-          if [ $? -eq 0 ]; then
+          if [ ${{ steps.check_changes_requested.outputs.isCollaborator }} == "true" ]; then
             echo "Changes requested by maintainer or collaborator, adding label..."
             echo "::set-output name=label::changes requested"
           else
@@ -30,12 +39,13 @@ jobs:
           fi
 
       - name: Add label if changes requested
-        if: steps.check_changes_requested.outputs.label == 'changes requested'
-        uses: actions/github/rest-api-calls@v3
+        if: steps.set_label.outputs.label == 'changes requested'
+        uses: actions/github-script@v6
         with:
-          method: POST
-          headers: |
-            Authorization: ${{ secrets.GITHUB_TOKEN }}
-          endpoint: issues/${{ github.event.pull_request.number }}/labels
-          body: |
-            ["changes requested"]
+          script: |
+            github.actions.getOctokit().issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ['changes requested']
+            });
