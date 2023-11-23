@@ -15,15 +15,15 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { github } = require('@actions/github');
-            const { owner, repo } = github.context.repo;
-            const pull_request_number = github.context.payload.pull_request.number;
-            const review_state = github.context.payload.review.state;
-            const changes_requested = github.context.payload.review.state === 'changes_requested';
+            const { github: octokit } = require('@actions/github');
+            const { owner, repo } = octokit.context.repo;
+            const pull_request_number = octokit.context.payload.pull_request.number;
+            const review_state = octokit.context.payload.review.state;
+            const changes_requested = octokit.context.payload.review.state === 'changes_requested';
             
             const addLabel = async () => {
               if (changes_requested) {
-                await github.issues.addLabels({
+                await octokit.issues.addLabels({
                   owner,
                   repo,
                   issue_number: pull_request_number,
