@@ -4,6 +4,10 @@ name: PR Review
 on:
   pull_request_review:
     types: [changes_requested]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 
 jobs:
