@@ -1,4 +1,3 @@
-
 on:
   pull_request_review:
     types:
@@ -16,11 +15,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { context, github } = require('@actions/github');
-            const { owner, repo } = context.repo;
-            const pull_request_number = context.payload.pull_request.number;
-            const review_state = context.payload.review.state;
-            const changes_requested = context.payload.review.state === 'changes_requested';
+            const { github } = require('@actions/github');
+            const { owner, repo } = github.context.repo;
+            const pull_request_number = github.context.payload.pull_request.number;
+            const review_state = github.context.payload.review.state;
+            const changes_requested = github.context.payload.review.state === 'changes_requested';
             
             const addLabel = async () => {
               if (changes_requested) {
