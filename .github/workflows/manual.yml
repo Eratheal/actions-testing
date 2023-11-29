@@ -18,14 +18,14 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { payload, github } = context;
+            const { payload, githubContext } = context;
 
             // Check if the review was a request for changes
             if (payload.review.state === 'changes_requested') {
               const prNumber = payload.pull_request.number;
 
               // Add the "rework" label to the pull request
-              context.github.issues.addLabels({
+              githubContext.github.issues.addLabels({
                 owner: payload.repository.owner.login,
                 repo: payload.repository.name,
                 issue_number: prNumber,
