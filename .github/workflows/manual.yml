@@ -1,34 +1,50 @@
-name: Label Reworks
+name: Add Changes Requested Label
 
 on:
   pull_request_review:
-    types:
-      - submitted
+    types: [changes_requested]
+
 
 jobs:
-  label_reworks:
+  add_changes_requested_label:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Label Reworks
-        uses: actions/github-script@v4
+      - name: Check if changes were requested by maintainer or collaborator
+        id: check_changes_requested
+        uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { payload, github } = context;
+            github.actions.getOctokit().rest.repos.getCollaborator({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: context.payload.review.user.login
+            }).then(response => {
+              if (response.status === 204) {
+                setContext('isCollaborator', true);
+              }
+            }).catch(error => {
+              setContext('isCollaborator', false);
+            });
 
-            // Check if the review was a request for changes
-            if (payload.review.state === 'changes_requested') {
-              const prNumber = payload.pull_request.number;
+      - name: Set label based on review
+        id: set_label
+        run: |
+          if [ ${{ steps.check_changes_requested.outputs.isCollaborator }} == "true" ]; then
+            echo "Changes requested by maintainer or collaborator, adding label..."
+            echo "::set-output name=label::changes requested"
+          else
+            echo "No changes requested by maintainer or collaborator, no action needed."
+            echo "::set-output name=label::no_changes_requested"
+          fi
 
-              // Add the "rework" label to the pull request
-              github.issues.addLabels({
-                owner: payload.repository.owner.login,
-                repo: payload.repository.name,
-                issue_number: prNumber,
-                labels: ['rework']
-              });
-            }
+      - name: Add label if changes requested
+        if: steps.set_label.outputs.label == 'changes requested'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.actions.getOctokit().issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ['changes requested']
+            });
