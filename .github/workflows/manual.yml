@@ -25,7 +25,7 @@ jobs:
               const prNumber = payload.pull_request.number;
 
               // Add the "rework" label to the pull request
-              github.issues.addLabels({
+              context.github.issues.addLabels({
                 owner: payload.repository.owner.login,
                 repo: payload.repository.name,
                 issue_number: prNumber,
